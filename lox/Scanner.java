@@ -1,18 +1,6 @@
 package lox;
 
-import static lox.TokenType.BANG_EQUAL;
-import static lox.TokenType.COMMA;
-import static lox.TokenType.DOT;
-import static lox.TokenType.EOF;
-import static lox.TokenType.GREATER_EQUAL;
-import static lox.TokenType.LEFT_BRACE;
-import static lox.TokenType.LEFT_PAREN;
-import static lox.TokenType.MINUS;
-import static lox.TokenType.PLUS;
-import static lox.TokenType.RIGHT_BRACE;
-import static lox.TokenType.RIGHT_PAREN;
-import static lox.TokenType.SEMICOLON;
-import static lox.TokenType.STAR;
+import static lox.TokenType.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,8 +47,70 @@ public class Scanner {
             case '=': addToken(match('=') ? EQUAL_EQUAL : EQUAL); break;
             case '<': addToken(match('=') ? LESS_EQUAL : LESS); break;
             case '>': addToken(match('=') ? GREATER_EQUAL: GREATER); break;
-            default: Lox.error(line, "Unexpected character."); break;
+            case '/': 
+            if (match('/')) {
+                while (peek() != '\n' && !isAtEnd()) advance();
+            }else {
+                addToken(SLASH);
+            }
+            break;
+            case ' ':
+                case '\r':
+                    case '\t':
+                        break;
+                        case '\n':
+                            line++;
+                            break;
+            case '"': string(); break;
+            default:
+            if (isDigit(c)) {
+                number();
+            }    else {
+            Lox.error(line, "Unexpected character."); break;
+            }
         }
+    }
+
+    private boolean isDigit(char c) {
+        return c >= '0' && c <= '9';
+    }
+
+    private void number() {
+        while (isDigit(peek())) advance();
+
+        if (peek() == '.' && isDigit(peekNext())) {
+            advance();
+            while (isDigit(peek())) advance();
+        }
+
+        addToken(NUMBER, Double.parseDouble(source.substring(start, current)));
+    }
+
+    private char peekNext() {
+        if (current + 1 >= source.length()) return '\0';
+        return source.charAt(current + 1);
+    }
+
+    private void string() {
+        while (peek() != '"' && isAtEnd()) {
+            if (peek() == '\n') line++;
+            advance();
+        }
+
+        if (isAtEnd()) {
+            Lox.error(line, "Unterminated string.");
+            return;
+        }
+
+        advance();
+
+        String value = source.substring(start + 1, current -1);
+        addToken(STRING, value);
+    }
+
+    private char peek() {
+        if (isAtEnd()) return '\0';
+        return source.charAt(current);
     }
 
     private boolean match(char expected) {
